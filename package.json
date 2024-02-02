@@ -1,0 +1,16 @@
+{
+  "name": "msdf-generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "generate":"bash ./scripts/gen-fonts.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "msdf-bmfont-xml": "^2.7.0"
+  }
+}
