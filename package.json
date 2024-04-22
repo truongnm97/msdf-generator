@@ -3,14 +3,22 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "generate":"bash ./scripts/gen-fonts.sh",
+    "start": "tsc && node dist/index.js",
+    "generate": "pnpm run start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "msdf-bmfont-xml": "^2.7.0"
+    "@types/node": "^20.12.7",
+    "msdf-bmfont-xml": "^2.7.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "execa": "^8.0.1"
   }
 }
