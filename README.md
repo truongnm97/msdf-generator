@@ -1,6 +1,8 @@
 # Lightning 3 SDF Font Generator
 
-This tool converts font files (.ttf, .otf, .woff, woff2) to Signed Distance Field (SDF) fonts for use with the Lightning 3's SDF text renderer.
+![Multi-Channel Signed Distance Field Atlass of the Ubuntu font](./header.png)
+
+This tool converts font files (.ttf, .otf, .woff, woff2) to Signed Distance Field (SDF) fonts for use with the Lightning 3's SDF text renderer. As an additional feature, this utility also generates the recommended font metrics for use in the configuration of SDF and Canvas Web fonts.
 
 Both multi-channel (MSDF) and single-channel (SSDF) font files are generated.
 
@@ -35,6 +37,75 @@ pnpm generate
 ```
 
 3. Access Generated Files: The generated SDF font files will be available in the `font-dst` directory.
+
+## Font Metrics Generation
+
+In addition to generating SDF fonts, this tool also generates the recommended
+metrics configuration for use in both SDF and Canvas Web fonts. After running
+the tool, the metrics extracted from each scanned font will be placed in the
+`font-dst/metrics/` directory. An example is below.
+
+**font-dst/metrics/Ubuntu-Regular.metrics.json**
+```json
+{
+  "ascender": 776,
+  "descender": -185,
+  "lineGap": 56,
+  "unitsPerEm": 1000
+}
+```
+
+These metrics can then be configured directly into the font face definitions
+in the Renderer Core Extension. If your app needs to support both Canvas and
+SDF versions of the same font for any reason, it is important that they are both
+configured with the same `metrics` configuration to ensure maximum layout parity
+between the SDF and Canvas Text Renderers.
+
+**CoreExtension.ts**
+```ts
+// ...
+stage.fontManager.addFontFace(
+  new WebTrFontFace({
+    fontFamily: 'Ubuntu',
+    descriptors: {},
+    fontUrl: '/fonts/Ubuntu-Regular.ttf',
+    metrics: {
+      ascender: 776,
+      descender: -185,
+      lineGap: 56,
+      unitsPerEm: 1000,
+    },
+  }),
+);
+
+stage.fontManager.addFontFace(
+  new SdfTrFontFace('msdf', {
+    fontFamily: 'Ubuntu',
+    descriptors: {},
+    atlasUrl: '/fonts/Ubuntu-Regular.msdf.png',
+    atlasDataUrl: '/fonts/Ubuntu-Regular.msdf.json',
+    stage,
+    // NOTE: Providing these metrics for SDF fonts is optional because
+    // they are encoded by this tool into the atlas data JSON data
+    // itself (see the `lightningMetrics` key). If you decide to use
+    // values that are different from the generated default you can
+    // insert them here.
+    metrics: {
+      ascender: 776,
+      descender: -185,
+      lineGap: 56,
+      unitsPerEm: 1000,
+    },
+  }),
+);
+// ...
+```
+
+The default recommended metrics come directly from the font file itself and may
+be tweaked as needed by the developer. Be sure to apply any tweaks to both the
+SDF and Canvas Web versions of the fonts equally if both versions are required
+by your application to ensure consistent text layout between SDF and Canvas
+Text Renderers.
 
 ## Adjusting the Charset
 
