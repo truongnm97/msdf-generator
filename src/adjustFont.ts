@@ -1,7 +1,10 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
+import opentype from 'opentype.js';
 import type { SdfFontInfo } from "./genFont.js";
+
+const metricsSubDir = 'metrics';
 
 /**
  * Adjusts the font data for the generated fonts.
@@ -14,11 +17,18 @@ import type { SdfFontInfo } from "./genFont.js";
  * See the following GitHub issue for more information:
  * https://github.com/soimy/msdf-bmfont-xml/pull/93
  *
- * @param font
+ * @param fontInfo
  */
-export function adjustFont(font: SdfFontInfo) {
-  console.log(chalk.magenta(`Adjusting ${chalk.bold(path.basename(font.jsonPath))}...`));
-  const json = JSON.parse(fs.readFileSync(font.jsonPath, 'utf8'));
+export async function adjustFont(fontInfo: SdfFontInfo) {
+  console.log(chalk.magenta(`Adjusting ${chalk.bold(path.basename(fontInfo.jsonPath))}...`));
+  const [
+    jsonFileContents,
+    font,
+  ] = await Promise.all([
+    fs.readFile(fontInfo.jsonPath, 'utf8'),
+    opentype.load(fontInfo.fontPath),
+  ]);
+  const json = JSON.parse(jsonFileContents);
   const distanceField = json.distanceField.distanceRange;
   /**
    * `pad` used by msdf-bmfont-xml
@@ -34,5 +44,27 @@ export function adjustFont(font: SdfFontInfo) {
   for (const char of json.chars) {
     char.yoffset = char.yoffset - pad - pad;
   }
-  fs.writeFileSync(font.jsonPath, JSON.stringify(json, null, 2));
+
+  const fontMetrics = {
+    ascender: font.tables.os2!.sTypoAscender as number,
+    descender: font.tables.os2!.sTypoDescender as number,
+    lineGap: font.tables.os2!.sTypoLineGap as number,
+    unitsPerEm: font.unitsPerEm,
+  };
+
+  // Add the font metrics to the JSON
+  json.lightningMetrics = fontMetrics;
+
+  // And also write the metrics to a separate file
+  const metricsDir = path.join(fontInfo.dstDir, metricsSubDir);
+  const metricsFilePath = path.join(metricsDir, `${fontInfo.fontName}.metrics.json`);
+
+  // Write the metrics file
+  await Promise.all([
+    (async () => {
+      await fs.ensureDir(metricsDir);
+      await fs.writeFile(metricsFilePath, JSON.stringify(fontMetrics, null, 2));
+    })(),
+    fs.writeFile(fontInfo.jsonPath, JSON.stringify(json, null, 2))
+  ]);
 }

@@ -1,30 +1,45 @@
 
 import { adjustFont } from './adjustFont.js';
-import { genFont, setGeneratePaths, type SdfFontInfo } from './genFont.js';
-import fs from 'fs';
+import { genFont, setGeneratePaths } from './genFont.js';
+import fs from 'fs-extra';
+import chalk from 'chalk';
 
-const fontSrcPath = 'font-src';
-const fontDstPath = 'font-dst';
+const fontSrcDir = 'font-src';
+const fontDstDir = 'font-dst';
 const font_exts = ['.ttf', '.otf', '.woff', '.woff2'];
 
-if (!fs.existsSync(fontDstPath)) {
-  fs.mkdirSync(fontDstPath, { recursive: true });
+console.log(chalk.green.bold('Lightning 3 SDF Font Generator'));
+
+// Check if src directory exists
+if (!fs.existsSync(fontSrcDir)) {
+  console.log(chalk.red.bold('`font-src` directory not found. Exiting...'));
+  process.exit(1);
 }
 
+fs.ensureDirSync(fontDstDir);
+
+
 export async function generateFonts() {
-  const files = fs.readdirSync(fontSrcPath);
+  const files = fs.readdirSync(fontSrcDir);
+
+  let fontsFound = 0;
   for (const file of files) {
     for (const ext of font_exts) {
       if (file.endsWith(ext)) {
+        fontsFound++;
         await adjustFont(await genFont(file, 'msdf'));
         await adjustFont(await genFont(file, 'ssdf'));
       }
     }
   }
+  if (fontsFound === 0) {
+    console.log(chalk.red.bold('No font files found in `font-src` directory. Exiting...'));
+    process.exit(1);
+  }
 }
 
 (async () => {
-  setGeneratePaths(fontSrcPath, fontDstPath);
+  setGeneratePaths(fontSrcDir, fontDstDir);
   await generateFonts();
 })().catch((err) => {
   console.log(err);

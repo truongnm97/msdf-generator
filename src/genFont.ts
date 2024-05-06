@@ -3,29 +3,31 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 
-let fontSrcPath: string = '';
-let fontDstPath: string = '';
-let overrides_path = '';
-let charset_path = '';
+let fontSrcDir: string = '';
+let fontDstDir: string = '';
+let overridesPath = '';
+let charsetPath = '';
 
 /**
  * Set the paths for the font source and destination directories.
  *
- * @param srcPath
- * @param dstPath
+ * @param srcDir
+ * @param dstDir
  */
-export function setGeneratePaths(srcPath: string, dstPath: string) {
-  fontSrcPath = srcPath;
-  fontDstPath = dstPath;
-  overrides_path = path.join(fontSrcPath, 'overrides.json');
-  charset_path = path.join(fontSrcPath, 'charset.txt');
+export function setGeneratePaths(srcDir: string, dstDir: string) {
+  fontSrcDir = srcDir;
+  fontDstDir = dstDir;
+  overridesPath = path.join(fontSrcDir, 'overrides.json');
+  charsetPath = path.join(fontSrcDir, 'charset.txt');
 }
 
 export interface SdfFontInfo {
   fontName: string;
   fieldType: 'ssdf' | 'msdf';
+  fontPath: string;
   jsonPath: string;
   pngPath: string;
+  dstDir: string;
 }
 
 /**
@@ -40,8 +42,8 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     console.log(`Invalid field type ${fieldType}`);
     process.exit(1);
   }
-
-  if (!fs.existsSync(path.join(fontSrcPath, fontFileName))) {
+  const fontPath = path.join(fontSrcDir, fontFileName);
+  if (!fs.existsSync(fontPath)) {
     console.log(`Font ${fontFileName} does not exist`);
     process.exit(1);
   }
@@ -52,7 +54,7 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
   }
 
   const fontNameNoExt = fontFileName.split('.')[0]!;
-  const overrides = JSON.parse(fs.readFileSync(overrides_path, 'utf8'));
+  const overrides = JSON.parse(fs.readFileSync(overridesPath, 'utf8'));
   const font_size = overrides[fontNameNoExt]?.[fieldType]?.fontSize || 42;
   const distance_range =
     overrides[fontNameNoExt]?.[fieldType]?.distanceRange || 4;
@@ -71,23 +73,25 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     '--distance-range',
     `${distance_range}`,
     '--charset-file',
-    charset_path,
-    path.join(fontSrcPath, fontFileName),
+    charsetPath,
+    fontPath,
   ]);
 
-  const info = {
+  const info: SdfFontInfo = {
     fontName: fontNameNoExt,
     fieldType,
-    jsonPath: path.join(fontDstPath, `${fontNameNoExt}.${fieldType}.json`),
-    pngPath: path.join(fontDstPath, `${fontNameNoExt}.${fieldType}.png`),
+    jsonPath: path.join(fontDstDir, `${fontNameNoExt}.${fieldType}.json`),
+    pngPath: path.join(fontDstDir, `${fontNameNoExt}.${fieldType}.png`),
+    fontPath,
+    dstDir: fontDstDir,
   };
 
   fs.renameSync(
-    path.join(fontSrcPath, `${fontNameNoExt}.json`),
+    path.join(fontSrcDir, `${fontNameNoExt}.json`),
     info.jsonPath,
   );
   fs.renameSync(
-    path.join(fontSrcPath, `${fontNameNoExt}.png`),
+    path.join(fontSrcDir, `${fontNameNoExt}.png`),
     info.pngPath,
   );
 
