@@ -2,8 +2,11 @@
   "name": "msdf-generator",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "type": "module",
+  "exports": {
+    "." : "./dist/genFont.js",
+    "./adjustFont": "./dist/adjustFont.js"
+  },
   "scripts": {
     "start": "tsc && node dist/index.js",
     "generate": "pnpm run start",
