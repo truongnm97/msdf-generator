@@ -36,16 +36,16 @@ export interface SdfFontInfo {
  * @param fieldType - The type of the font field (msdf or ssdf).
  * @returns {Promise<void>} - A promise that resolves when the font generation is complete.
  */
-export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'): Promise<SdfFontInfo> {
+export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'): Promise<SdfFontInfo | null> {
   console.log(chalk.blue(`Generating ${fieldType} font from ${chalk.bold(fontFileName)}...`));
   if (fieldType !== 'msdf' && fieldType !== 'ssdf') {
     console.log(`Invalid field type ${fieldType}`);
-    process.exit(1);
+    return null
   }
   const fontPath = path.join(fontSrcDir, fontFileName);
   if (!fs.existsSync(fontPath)) {
     console.log(`Font ${fontFileName} does not exist`);
-    process.exit(1);
+    return null
   }
 
   let bmfont_field_type: string = fieldType;
@@ -54,7 +54,7 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
   }
 
   const fontNameNoExt = fontFileName.split('.')[0]!;
-  const overrides = JSON.parse(fs.readFileSync(overridesPath, 'utf8'));
+  const overrides = fs.existsSync(overridesPath) ? JSON.parse(fs.readFileSync(overridesPath, 'utf8')): {};
   const font_size = overrides[fontNameNoExt]?.[fieldType]?.fontSize || 42;
   const distance_range =
     overrides[fontNameNoExt]?.[fieldType]?.distanceRange || 4;
@@ -72,8 +72,7 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     `${font_size}`,
     '--distance-range',
     `${distance_range}`,
-    '--charset-file',
-    charsetPath,
+    ...(fs.existsSync(charsetPath) ? ['--charset-file', charsetPath] : []),
     fontPath,
   ]);
 

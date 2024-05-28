@@ -27,8 +27,11 @@ export async function generateFonts() {
     for (const ext of font_exts) {
       if (file.endsWith(ext)) {
         fontsFound++;
-        await adjustFont(await genFont(file, 'msdf'));
-        await adjustFont(await genFont(file, 'ssdf'));
+        const msdfFont = await genFont(file, 'msdf');
+        if (msdfFont) await adjustFont(msdfFont);
+
+        const ssdfFont = await genFont(file, 'ssdf')
+        if (ssdfFont) await adjustFont(ssdfFont);
       }
     }
   }
