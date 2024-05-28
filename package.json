@@ -8,8 +8,7 @@
     "./adjustFont": "./dist/adjustFont.js"
   },
   "scripts": {
-    "build": "tsc",
-    "prepare": "pnpm -v > /dev/null 2>&1 && pnpm run build || npm run build",
+    "postinstall": "tsc || echo 'Failed to run tsc' >&2",
     "start": "tsc && node dist/index.js",
     "generate": "pnpm run start",
     "test": "echo \"Error: no test specified\" && exit 1"
