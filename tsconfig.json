@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "rootDir": "./src",
-    "types": ["node"],
+    "types": ["node", "msdf-bmfont-xml"],
     "lib": ["ES2022", "DOM"],
     "outDir": "dist",
     "target": "ES2022",
@@ -13,6 +13,7 @@
     "paths": {
       "*": ["./node_modules/*", "./src/*"]
     },
+    "typeRoots": ["./node_modules/@types", "./types"],
 
     // Type Checking / Syntax Rules
     "strict": true,
