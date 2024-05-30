@@ -1,4 +1,3 @@
-
 import { adjustFont } from './adjustFont.js';
 import { genFont, setGeneratePaths } from './genFont.js';
 import fs from 'fs-extra';
@@ -18,25 +17,28 @@ if (!fs.existsSync(fontSrcDir)) {
 
 fs.ensureDirSync(fontDstDir);
 
-
 export async function generateFonts() {
-  const files = fs.readdirSync(fontSrcDir);
+  try {
+    const files = fs.readdirSync(fontSrcDir);
+    let fontsFound = 0;
+    for (const file of files) {
+      for (const ext of font_exts) {
+        if (file.endsWith(ext)) {
+          fontsFound++;
+          const msdfFont = await genFont(file, 'msdf');
+          if (msdfFont) await adjustFont(msdfFont);
 
-  let fontsFound = 0;
-  for (const file of files) {
-    for (const ext of font_exts) {
-      if (file.endsWith(ext)) {
-        fontsFound++;
-        const msdfFont = await genFont(file, 'msdf');
-        if (msdfFont) await adjustFont(msdfFont);
-
-        const ssdfFont = await genFont(file, 'ssdf')
-        if (ssdfFont) await adjustFont(ssdfFont);
+          const ssdfFont = await genFont(file, 'ssdf');
+          if (ssdfFont) await adjustFont(ssdfFont);
+        }
       }
     }
-  }
-  if (fontsFound === 0) {
-    console.log(chalk.red.bold('No font files found in `font-src` directory. Exiting...'));
+    if (fontsFound === 0) {
+      console.log(chalk.red.bold('No font files found in `font-src` directory. Exiting...'));
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error(chalk.red('Error generating fonts:'), error);
     process.exit(1);
   }
 }
