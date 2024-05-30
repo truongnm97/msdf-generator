@@ -1,7 +1,7 @@
-import { execa } from 'execa';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
+import generateBMFont from 'msdf-bmfont-xml';
 let fontSrcDir = '';
 let fontDstDir = '';
 let overridesPath = '';
@@ -43,23 +43,19 @@ export async function genFont(fontFileName, fieldType) {
     const overrides = fs.existsSync(overridesPath) ? JSON.parse(fs.readFileSync(overridesPath, 'utf8')) : {};
     const font_size = overrides[fontNameNoExt]?.[fieldType]?.fontSize || 42;
     const distance_range = overrides[fontNameNoExt]?.[fieldType]?.distanceRange || 4;
-    // await generateFont(fontPath, fontDstDir, fontNameNoExt, fieldType, options)
-    await execa('msdf-bmfont', [
-        '--field-type',
-        bmfont_field_type,
-        '--output-type',
-        'json',
-        '--round-decimal',
-        '6',
-        '--smart-size',
-        '--pot',
-        '--font-size',
-        `${font_size}`,
-        '--distance-range',
-        `${distance_range}`,
-        ...(fs.existsSync(charsetPath) ? ['--charset-file', charsetPath] : []),
-        fontPath,
-    ]);
+    let options = {
+        fieldType: bmfont_field_type,
+        outputType: 'json',
+        roundDecimal: 6,
+        smartSize: true,
+        pot: true,
+        fontSize: font_size,
+        distanceRange: distance_range,
+    };
+    if (fs.existsSync(charsetPath)) {
+        options['charset'] = fs.readFileSync(charsetPath, 'utf8');
+    }
+    await generateFont(fontPath, fontDstDir, fontNameNoExt, fieldType, options);
     const info = {
         fontName: fontNameNoExt,
         fieldType,
@@ -68,8 +64,38 @@ export async function genFont(fontFileName, fieldType) {
         fontPath,
         dstDir: fontDstDir,
     };
-    fs.renameSync(path.join(fontSrcDir, `${fontNameNoExt}.json`), info.jsonPath);
-    fs.renameSync(path.join(fontSrcDir, `${fontNameNoExt}.png`), info.pngPath);
     return info;
 }
+const generateFont = (fontSrcPath, fontDestPath, fontName, fieldType, options) => {
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(fontDestPath)) {
+            fs.mkdirSync(fontDestPath, { recursive: true });
+        }
+        generateBMFont(fontSrcPath, options, (err, textures, font) => {
+            if (err) {
+                console.error(err);
+                reject(err);
+            }
+            else {
+                textures.forEach((texture) => {
+                    try {
+                        fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.png`), texture.texture);
+                    }
+                    catch (e) {
+                        console.error(e);
+                        reject(e);
+                    }
+                });
+                try {
+                    fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.json`), font.data);
+                    resolve();
+                }
+                catch (e) {
+                    console.error(err);
+                    reject(e);
+                }
+            }
+        });
+    });
+};
 //# sourceMappingURL=genFont.js.map

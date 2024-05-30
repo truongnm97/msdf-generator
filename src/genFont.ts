@@ -1,7 +1,7 @@
-import { execa } from 'execa';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
+import generateBMFont from 'msdf-bmfont-xml';
 
 let fontSrcDir: string = '';
 let fontDstDir: string = '';
@@ -70,23 +70,21 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
   const distance_range =
     overrides[fontNameNoExt]?.[fieldType]?.distanceRange || 4;
 
-  // await generateFont(fontPath, fontDstDir, fontNameNoExt, fieldType, options)
-  await execa('msdf-bmfont', [
-    '--field-type',
-    bmfont_field_type,
-    '--output-type',
-    'json',
-    '--round-decimal',
-    '6',
-    '--smart-size',
-    '--pot',
-    '--font-size',
-    `${font_size}`,
-    '--distance-range',
-    `${distance_range}`,
-    ...(fs.existsSync(charsetPath) ? ['--charset-file', charsetPath] : []),
-    fontPath,
-  ]);
+  let options: FontOptions = {
+    fieldType: bmfont_field_type,
+    outputType: 'json',
+    roundDecimal: 6,
+    smartSize: true,
+    pot: true,
+    fontSize: font_size,
+    distanceRange: distance_range,
+  }
+
+  if (fs.existsSync(charsetPath)){
+    options['charset'] = fs.readFileSync(charsetPath, 'utf8')
+  }
+
+  await generateFont(fontPath, fontDstDir, fontNameNoExt, fieldType, options)
 
   const info: SdfFontInfo = {
     fontName: fontNameNoExt,
@@ -97,14 +95,39 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     dstDir: fontDstDir,
   };
 
-  fs.renameSync(
-    path.join(fontSrcDir, `${fontNameNoExt}.json`),
-    info.jsonPath,
-  );
-  fs.renameSync(
-    path.join(fontSrcDir, `${fontNameNoExt}.png`),
-    info.pngPath,
-  );
-
   return info;
+}
+
+const generateFont = (fontSrcPath: string, fontDestPath: string, fontName: string, fieldType:string,  options:FontOptions ): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(fontDestPath)) {
+      fs.mkdirSync(fontDestPath, { recursive: true })
+    }
+    generateBMFont(
+      fontSrcPath,
+      options,
+      (err, textures, font) => {
+        if (err) {
+          console.error(err)
+          reject(err)
+        } else {
+          textures.forEach((texture:any) => {
+            try {
+              fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.png`), texture.texture)
+            } catch (e) {
+              console.error(e)
+              reject(e)
+            }
+          })
+          try {
+            fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.json`), font.data)
+            resolve()
+          } catch (e) {
+            console.error(err)
+            reject(e)
+          }
+        }
+      }
+    )
+  })
 }
