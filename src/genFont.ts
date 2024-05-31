@@ -1,7 +1,24 @@
-import { execa } from 'execa';
-import fs from 'fs';
+/*
+ * Copyright 2023 Comcast Cable Communications Management, LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
+import generateBMFont from 'msdf-bmfont-xml';
 
 let fontSrcDir: string = '';
 let fontDstDir: string = '';
@@ -30,6 +47,17 @@ export interface SdfFontInfo {
   dstDir: string;
 }
 
+type FontOptions = {
+  fieldType: string;
+  outputType: 'json';
+  roundDecimal: number;
+  smartSize: boolean;
+  pot: boolean;
+  fontSize: number;
+  distanceRange: number;
+  charset?: string;
+}
+
 /**
  * Generates a font file in the specified field type.
  * @param fontFileName - The name of the font.
@@ -54,27 +82,26 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
   }
 
   const fontNameNoExt = fontFileName.split('.')[0]!;
-  const overrides = fs.existsSync(overridesPath) ? JSON.parse(fs.readFileSync(overridesPath, 'utf8')): {};
+  const overrides = fs.existsSync(overridesPath) ? JSON.parse(fs.readFileSync(overridesPath, 'utf8')) : {};
   const font_size = overrides[fontNameNoExt]?.[fieldType]?.fontSize || 42;
   const distance_range =
     overrides[fontNameNoExt]?.[fieldType]?.distanceRange || 4;
 
-  await execa('msdf-bmfont', [
-    '--field-type',
-    bmfont_field_type,
-    '--output-type',
-    'json',
-    '--round-decimal',
-    '6',
-    '--smart-size',
-    '--pot',
-    '--font-size',
-    `${font_size}`,
-    '--distance-range',
-    `${distance_range}`,
-    ...(fs.existsSync(charsetPath) ? ['--charset-file', charsetPath] : []),
-    fontPath,
-  ]);
+  let options: FontOptions = {
+    fieldType: bmfont_field_type,
+    outputType: 'json',
+    roundDecimal: 6,
+    smartSize: true,
+    pot: true,
+    fontSize: font_size,
+    distanceRange: distance_range,
+  }
+
+  if (fs.existsSync(charsetPath)) {
+    options['charset'] = fs.readFileSync(charsetPath, 'utf8')
+  }
+
+  await generateFont(fontPath, fontDstDir, fontNameNoExt, fieldType, options)
 
   const info: SdfFontInfo = {
     fontName: fontNameNoExt,
@@ -85,15 +112,39 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     dstDir: fontDstDir,
   };
 
-  fs.renameSync(
-    path.join(fontSrcDir, `${fontNameNoExt}.json`),
-    info.jsonPath,
-  );
-  fs.renameSync(
-    path.join(fontSrcDir, `${fontNameNoExt}.png`),
-    info.pngPath,
-  );
-
   return info;
 }
 
+const generateFont = (fontSrcPath: string, fontDestPath: string, fontName: string, fieldType: string, options: FontOptions): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(fontDestPath)) {
+      fs.mkdirSync(fontDestPath, { recursive: true })
+    }
+    generateBMFont(
+      fontSrcPath,
+      options,
+      (err, textures, font) => {
+        if (err) {
+          console.error(err)
+          reject(err)
+        } else {
+          textures.forEach((texture: any) => {
+            try {
+              fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.png`), texture.texture)
+            } catch (e) {
+              console.error(e)
+              reject(e)
+            }
+          })
+          try {
+            fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.json`), font.data)
+            resolve()
+          } catch (e) {
+            console.error(err)
+            reject(e)
+          }
+        }
+      }
+    )
+  })
+}
