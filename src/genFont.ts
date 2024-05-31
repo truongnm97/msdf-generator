@@ -1,3 +1,20 @@
+/*
+ * Copyright 2023 Comcast Cable Communications Management, LLC
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
@@ -59,13 +76,13 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     return null
   }
 
-  let bmfont_field_type: string  = fieldType;
+  let bmfont_field_type: string = fieldType;
   if (bmfont_field_type === 'ssdf') {
     bmfont_field_type = 'sdf';
   }
 
   const fontNameNoExt = fontFileName.split('.')[0]!;
-  const overrides = fs.existsSync(overridesPath) ? JSON.parse(fs.readFileSync(overridesPath, 'utf8')): {};
+  const overrides = fs.existsSync(overridesPath) ? JSON.parse(fs.readFileSync(overridesPath, 'utf8')) : {};
   const font_size = overrides[fontNameNoExt]?.[fieldType]?.fontSize || 42;
   const distance_range =
     overrides[fontNameNoExt]?.[fieldType]?.distanceRange || 4;
@@ -80,7 +97,7 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
     distanceRange: distance_range,
   }
 
-  if (fs.existsSync(charsetPath)){
+  if (fs.existsSync(charsetPath)) {
     options['charset'] = fs.readFileSync(charsetPath, 'utf8')
   }
 
@@ -98,7 +115,7 @@ export async function genFont(fontFileName: string, fieldType: 'ssdf' | 'msdf'):
   return info;
 }
 
-const generateFont = (fontSrcPath: string, fontDestPath: string, fontName: string, fieldType:string,  options:FontOptions ): Promise<void> => {
+const generateFont = (fontSrcPath: string, fontDestPath: string, fontName: string, fieldType: string, options: FontOptions): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(fontDestPath)) {
       fs.mkdirSync(fontDestPath, { recursive: true })
@@ -111,7 +128,7 @@ const generateFont = (fontSrcPath: string, fontDestPath: string, fontName: strin
           console.error(err)
           reject(err)
         } else {
-          textures.forEach((texture:any) => {
+          textures.forEach((texture: any) => {
             try {
               fs.writeFileSync(path.resolve(fontDestPath, `${fontName}.${fieldType}.png`), texture.texture)
             } catch (e) {

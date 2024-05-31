@@ -1,20 +1,32 @@
 {
-  "name": "msdf-generator",
+  "name": "@lightningjs/msdf-generator",
   "version": "1.0.0",
-  "description": "",
+  "description": "Converts font files (.ttf, .otf, .woff, .woff2) to SDF format for Lightning 3's renderer, with added font metrics generation for SDF and Canvas Web fonts",
   "type": "module",
   "exports": {
     ".": "./dist/genFont.js",
     "./adjustFont": "./dist/adjustFont.js"
   },
   "scripts": {
+    "build": "tsc",
     "start": "tsc && node dist/index.js",
     "generate": "pnpm run start",
+    "prepublishOnly": "pnpm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Comcast Cable Communications Management, LLC",
+  "license": "Apache-2.0",
+  "keywords": [
+    "msdf",
+    "ssdf",
+    "font generator",
+    "lightning3",
+    "font tools"
+  ],
+  "bugs": {
+    "url": "https://github.com/lightning-js/msdf-generator/issues"
+  },
+  "homepage": "https://github.com/lightning-js/msdf-generator#lightning-3-sdf-font-generator",
   "engines": {
     "node": ">=18.0.0"
   },
