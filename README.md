@@ -1,6 +1,6 @@
 # Lightning 3 SDF Font Generator
 
-![Multi-Channel Signed Distance Field Atlass of the Ubuntu font](./header.png)
+![Multi-Channel Signed Distance Field Atlass of the Ubuntu font](https://github.com/lightning-js/msdf-generator/blob/main/header.png)
 
 This tool converts font files (.ttf, .otf, .woff, woff2) to Signed Distance Field (SDF) fonts for use with the Lightning 3's SDF text renderer. As an additional feature, this utility also generates the recommended font metrics for use in the configuration of SDF and Canvas Web fonts.
 
