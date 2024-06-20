@@ -49,6 +49,7 @@
     "src",
     "font-src-sample",
     "types",
-    "header.png"
+    "header.png",
+    "tsconfig.json"
   ]
 }
