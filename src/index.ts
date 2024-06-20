@@ -20,21 +20,23 @@ import { genFont, setGeneratePaths } from './genFont.js';
 import fs from 'fs-extra';
 import chalk from 'chalk';
 
-const fontSrcDir = 'font-src';
-const fontDstDir = 'font-dst';
 const font_exts = ['.ttf', '.otf', '.woff', '.woff2'];
 
-console.log(chalk.green.bold('Lightning 3 SDF Font Generator'));
+/**
+ * @param fontFaceName if `singleAtlas` is true, this will be used for naming the single atlas,
+ * and font name format should follow this format: `[fontFaceName]-[fontWeight].[ext]`. For ex: Inter-Bold.tff
+ */
+export async function generateFonts(singleAtlas?: boolean, fontFaceName?: string, fontSrcDir = 'font-src', fontDstDir = 'font-dst') {
+  setGeneratePaths(fontSrcDir, fontDstDir);
 
-// Check if src directory exists
-if (!fs.existsSync(fontSrcDir)) {
-  console.log(chalk.red.bold('`font-src` directory not found. Exiting...'));
-  process.exit(1);
-}
+  // Check if src directory exists
+  if (!fs.existsSync(fontSrcDir)) {
+    console.log(chalk.red.bold('`font-src` directory not found. Exiting...'));
+    process.exit(1);
+  }
 
-fs.ensureDirSync(fontDstDir);
+  fs.ensureDirSync(fontDstDir);
 
-export async function generateFonts() {
   try {
     const files = fs.readdirSync(fontSrcDir);
     let fontsFound = 0;
@@ -42,11 +44,14 @@ export async function generateFonts() {
       for (const ext of font_exts) {
         if (file.endsWith(ext)) {
           fontsFound++;
-          const msdfFont = await genFont(file, 'msdf');
+          const ssdfFont = await genFont(file, 'ssdf', singleAtlas, fontFaceName);
+          if (ssdfFont) await adjustFont(ssdfFont);
+
+          const msdfFont = await genFont(file, 'msdf', singleAtlas, fontFaceName);
           if (msdfFont) await adjustFont(msdfFont);
 
-          const ssdfFont = await genFont(file, 'ssdf');
-          if (ssdfFont) await adjustFont(ssdfFont);
+          // const mtsdfFont = await genFont(file, 'mtsdf', singleAtlas, fontFaceName);
+          // if (mtsdfFont) await adjustFont(mtsdfFont);
         }
       }
     }
@@ -61,8 +66,8 @@ export async function generateFonts() {
 }
 
 (async () => {
-  setGeneratePaths(fontSrcDir, fontDstDir);
-  await generateFonts();
+  await generateFonts(true);
 })().catch((err) => {
   console.log(err);
 });
+

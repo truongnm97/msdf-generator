@@ -58,8 +58,16 @@ export async function adjustFont(fontInfo: SdfFontInfo) {
   json.common.base = json.common.base - pad;
 
   // Remove 2x pad from the y-offset of every character
-  for (const char of json.chars) {
-    char.yoffset = char.yoffset - pad - pad;
+  if (Array.isArray(json.chars)) {
+    for (const char of json.chars) {
+      char.yoffset = char.yoffset - pad - pad;
+    }
+  } else {
+    for (const key of Object.keys(json.chars)) {
+      for (const char of json.chars[key]) {
+        char.yoffset = char.yoffset - pad - pad;
+      }
+    }
   }
 
   const fontMetrics = {
