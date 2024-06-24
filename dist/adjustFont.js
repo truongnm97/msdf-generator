@@ -34,9 +34,13 @@ const metricsSubDir = 'metrics';
  */
 export async function adjustFont(fontInfo) {
     console.log(chalk.magenta(`Adjusting ${chalk.bold(path.basename(fontInfo.jsonPath))}...`));
-    const font = await opentype.load(fontInfo.fontPath);
-    const json = fontInfo.fontData;
-    const distanceField = json.distanceField.distanceRange;
+    const [jsonFileContents, font,] = await Promise.all([
+        fs.readFile(fontInfo.jsonPath, 'utf8'),
+        opentype.load(fontInfo.fontPath),
+    ]);
+    const json = JSON.parse(jsonFileContents);
+    let fontData = fontInfo.fontWeight ? json[fontInfo.fontWeight] : json;
+    const distanceField = fontData.distanceField.distanceRange;
     /**
      * `pad` used by msdf-bmfont-xml
      *
@@ -44,19 +48,10 @@ export async function adjustFont(fontInfo) {
      */
     const pad = (distanceField >> 1);
     // Remove 1x pad from the baseline
-    json.common.base = json.common.base - pad;
+    fontData.common.base = fontData.common.base - pad;
     // Remove 2x pad from the y-offset of every character
-    if (Array.isArray(json.chars)) {
-        for (const char of json.chars) {
-            char.yoffset = char.yoffset - pad - pad;
-        }
-    }
-    else {
-        for (const key of Object.keys(json.chars)) {
-            for (const char of json.chars[key]) {
-                char.yoffset = char.yoffset - pad - pad;
-            }
-        }
+    for (const char of fontData.chars) {
+        char.yoffset = char.yoffset - pad - pad;
     }
     const fontMetrics = {
         ascender: font.tables.os2.sTypoAscender,
@@ -65,7 +60,7 @@ export async function adjustFont(fontInfo) {
         unitsPerEm: font.unitsPerEm,
     };
     // Add the font metrics to the JSON
-    json.lightningMetrics = fontMetrics;
+    fontData.lightningMetrics = fontMetrics;
     // And also write the metrics to a separate file
     const metricsDir = path.join(fontInfo.dstDir, metricsSubDir);
     const metricsFilePath = path.join(metricsDir, `${fontInfo.fontName}.metrics.json`);
@@ -75,6 +70,7 @@ export async function adjustFont(fontInfo) {
             await fs.ensureDir(metricsDir);
             await fs.writeFile(metricsFilePath, JSON.stringify(fontMetrics, null, 2));
         })(),
+        fs.writeFile(fontInfo.jsonPath, JSON.stringify(json, null, 2))
     ]);
 }
 //# sourceMappingURL=adjustFont.js.map

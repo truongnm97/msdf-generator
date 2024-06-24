@@ -14,6 +14,7 @@ export interface SdfFontInfo {
     pngPath: string;
     dstDir: string;
     fontData: any;
+    fontWeight: string;
 }
 /**
  * Generates a font file in the specified field type.

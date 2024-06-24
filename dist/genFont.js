@@ -17,8 +17,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
-// @ts-ignore
-import generateBMFont from '../../msdf-bmfont-xml/index.js';
+import generateBMFont from 'msdf-bmfont-xml';
 const fontWeightNames = ['Thin', 'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black'];
 let fontSrcDir = '';
 let fontDstDir = '';
@@ -83,7 +82,7 @@ export async function genFont(fontFileName, fieldType, singleAtlas, fontFaceName
     if (fs.existsSync(charsetPath)) {
         options['charset'] = fs.readFileSync(charsetPath, 'utf8');
     }
-    const fontData = await generateFont({
+    const { fontWeight, fontData } = await generateFont({
         fontSrcPath: fontPath,
         fontDestPath: fontDstDir,
         jsonPath,
@@ -99,6 +98,7 @@ export async function genFont(fontFileName, fieldType, singleAtlas, fontFaceName
         fontPath,
         dstDir: fontDstDir,
         fontData,
+        fontWeight,
     };
     return info;
 }
@@ -123,11 +123,12 @@ const generateFont = ({ fontFaceName, jsonPath, fontNameNoExt, options, fontSrcP
                     }
                 });
                 const fontData = JSON.parse(font.data);
+                let fontWeight;
                 try {
                     if (options.reuse) {
                         // Create/Update atlas json file
                         // Suppose font name format: [fontFaceName]-[fontWeight]
-                        let fontWeight = fontNameNoExt.includes(fontFaceName)
+                        fontWeight = fontNameNoExt.includes(fontFaceName)
                             ? fontNameNoExt
                                 .split("-")
                                 .filter((f) => f !== fontFaceName)?.[0] || fontNameNoExt
@@ -153,7 +154,7 @@ const generateFont = ({ fontFaceName, jsonPath, fontNameNoExt, options, fontSrcP
                         // Create atlas json file
                         fs.writeFileSync(jsonPath, font.data);
                     }
-                    resolve(fontData);
+                    resolve({ fontData, fontWeight });
                 }
                 catch (e) {
                     console.error(err);

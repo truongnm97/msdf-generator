@@ -18,8 +18,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
-// @ts-ignore
-import generateBMFont from '../../msdf-bmfont-xml/index.js';
+import generateBMFont from 'msdf-bmfont-xml';
 
 const fontWeightNames = ['Thin', 'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black'];
 
@@ -51,6 +50,7 @@ export interface SdfFontInfo {
   pngPath: string;
   dstDir: string;
   fontData: any;
+  fontWeight: string;
 }
 
 type FontOptions = {
@@ -130,7 +130,7 @@ export async function genFont(
     options['charset'] = fs.readFileSync(charsetPath, 'utf8');
   }
 
-  const fontData = await generateFont({ 
+  const { fontWeight, fontData } = await generateFont({ 
     fontSrcPath: fontPath,
     fontDestPath: fontDstDir,
     jsonPath,
@@ -147,6 +147,7 @@ export async function genFont(
     fontPath,
     dstDir: fontDstDir,
     fontData,
+    fontWeight,
   };
 
   return info;
@@ -166,7 +167,7 @@ const generateFont = ({
   fontNameNoExt: string,
   fontFaceName: string,
   options: FontOptions 
-}): Promise<object> => {
+}): Promise<any> => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(fontDestPath)) {
       fs.mkdirSync(fontDestPath, { recursive: true })
@@ -189,13 +190,14 @@ const generateFont = ({
           })
 
           const fontData = JSON.parse(font.data);
+          let fontWeight;
 
           try {
             if (options.reuse) {
               // Create/Update atlas json file
 
               // Suppose font name format: [fontFaceName]-[fontWeight]
-              let fontWeight = fontNameNoExt.includes(fontFaceName)
+              fontWeight = fontNameNoExt.includes(fontFaceName)
                 ? fontNameNoExt
                     .split("-")
                     .filter((f) => f !== fontFaceName)?.[0] || fontNameNoExt
@@ -224,7 +226,7 @@ const generateFont = ({
               fs.writeFileSync(jsonPath, font.data);
             }
 
-            resolve(fontData);
+            resolve({ fontData, fontWeight });
           } catch (e) {
             console.error(err)
             reject(e)
