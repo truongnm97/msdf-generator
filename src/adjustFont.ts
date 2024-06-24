@@ -38,14 +38,8 @@ const metricsSubDir = 'metrics';
  */
 export async function adjustFont(fontInfo: SdfFontInfo) {
   console.log(chalk.magenta(`Adjusting ${chalk.bold(path.basename(fontInfo.jsonPath))}...`));
-  const [
-    jsonFileContents,
-    font,
-  ] = await Promise.all([
-    fs.readFile(fontInfo.jsonPath, 'utf8'),
-    opentype.load(fontInfo.fontPath),
-  ]);
-  const json = JSON.parse(jsonFileContents);
+  const font = await opentype.load(fontInfo.fontPath);
+  const json = fontInfo.fontData;
   const distanceField = json.distanceField.distanceRange;
   /**
    * `pad` used by msdf-bmfont-xml
@@ -90,6 +84,5 @@ export async function adjustFont(fontInfo: SdfFontInfo) {
       await fs.ensureDir(metricsDir);
       await fs.writeFile(metricsFilePath, JSON.stringify(fontMetrics, null, 2));
     })(),
-    fs.writeFile(fontInfo.jsonPath, JSON.stringify(json, null, 2))
   ]);
 }

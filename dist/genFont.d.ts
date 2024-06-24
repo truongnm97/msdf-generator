@@ -13,6 +13,7 @@ export interface SdfFontInfo {
     jsonPath: string;
     pngPath: string;
     dstDir: string;
+    fontData: any;
 }
 /**
  * Generates a font file in the specified field type.

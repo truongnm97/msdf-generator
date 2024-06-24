@@ -18,7 +18,8 @@
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
-import generateBMFont from 'msdf-bmfont-xml';
+// @ts-ignore
+import generateBMFont from '../../msdf-bmfont-xml/index.js';
 
 const fontWeightNames = ['Thin', 'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black'];
 
@@ -49,6 +50,7 @@ export interface SdfFontInfo {
   jsonPath: string;
   pngPath: string;
   dstDir: string;
+  fontData: any;
 }
 
 type FontOptions = {
@@ -56,7 +58,10 @@ type FontOptions = {
   outputType: 'json';
   roundDecimal: number;
   smartSize: boolean;
-  pot: boolean;
+  pot?: boolean;
+  square?: boolean;
+  rot?: boolean;
+  border?: number;
   fontSize: number;
   distanceRange: number;
   charset?: string;
@@ -110,7 +115,6 @@ export async function genFont(
     outputType: 'json',
     roundDecimal: 6,
     smartSize: true,
-    pot: true,
     fontSize: font_size,
     distanceRange: distance_range,
     rtl: true,
@@ -126,7 +130,7 @@ export async function genFont(
     options['charset'] = fs.readFileSync(charsetPath, 'utf8');
   }
 
-  await generateFont({ 
+  const fontData = await generateFont({ 
     fontSrcPath: fontPath,
     fontDestPath: fontDstDir,
     jsonPath,
@@ -142,6 +146,7 @@ export async function genFont(
     pngPath,
     fontPath,
     dstDir: fontDstDir,
+    fontData,
   };
 
   return info;
@@ -161,7 +166,7 @@ const generateFont = ({
   fontNameNoExt: string,
   fontFaceName: string,
   options: FontOptions 
-}): Promise<void> => {
+}): Promise<object> => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(fontDestPath)) {
       fs.mkdirSync(fontDestPath, { recursive: true })
@@ -183,13 +188,14 @@ const generateFont = ({
             }
           })
 
+          const fontData = JSON.parse(font.data);
+
           try {
             if (options.reuse) {
               // Create/Update atlas json file
-              const fontData = JSON.parse(font.data);
 
               // Suppose font name format: [fontFaceName]-[fontWeight]
-              const fontWeight = fontNameNoExt.includes(fontFaceName)
+              let fontWeight = fontNameNoExt.includes(fontFaceName)
                 ? fontNameNoExt
                     .split("-")
                     .filter((f) => f !== fontFaceName)?.[0] || fontNameNoExt
@@ -199,27 +205,26 @@ const generateFont = ({
                 console.log(chalk.yellow(`${chalk.bold(fontWeight)} is not following the format ${chalk.bold('[fontFaceName]-[fontWeight].[ext]')} or ${chalk.bold('[fontFaceName]')} is not defined correctly, your font may not working correctly`));
               }
 
+              fontWeight = fontWeight.toLowerCase();
               let atlasJsonData;
+              const { ...restFontData } = fontData;
               if (fs.existsSync(jsonPath)) {
                 atlasJsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-                atlasJsonData.chars[fontWeight] = fontData.chars;
+                atlasJsonData[fontWeight] = restFontData;
               } else {
-                atlasJsonData = fontData;
-                atlasJsonData.chars = { [fontWeight]: fontData.chars };
-                atlasJsonData.info.face = fontFaceName;
+                atlasJsonData = { [fontWeight]: restFontData };
               }
 
-
-              fs.writeFileSync(jsonPath, JSON.stringify(atlasJsonData, null, 2))
+              fs.writeFileSync(jsonPath, JSON.stringify(atlasJsonData, null, 2));
 
               // Create/Update atlas config file
-              fs.writeFileSync(options.reuse, JSON.stringify(font.settings, null, '\t'))
+              fs.writeFileSync(options.reuse, JSON.stringify(font.settings, null, '\t'));
             } else {
               // Create atlas json file
-              fs.writeFileSync(jsonPath, font.data)
+              fs.writeFileSync(jsonPath, font.data);
             }
 
-            resolve()
+            resolve(fontData);
           } catch (e) {
             console.error(err)
             reject(e)

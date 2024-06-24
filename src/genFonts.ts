@@ -27,11 +27,11 @@ export default async function generateFonts(singleAtlas?: boolean, fontFaceName?
       for (const ext of font_exts) {
         if (file.endsWith(ext)) {
           fontsFound++;
-          const ssdfFont = await genFont(file, 'ssdf', singleAtlas, fontFaceName);
-          if (ssdfFont) await adjustFont(ssdfFont);
-
-          const msdfFont = await genFont(file, 'msdf', singleAtlas, fontFaceName);
-          if (msdfFont) await adjustFont(msdfFont);
+          // const ssdfFont = await genFont(file, 'ssdf', singleAtlas, fontFaceName);
+          // if (ssdfFont) await adjustFont(ssdfFont);
+          //
+          // const msdfFont = await genFont(file, 'msdf', singleAtlas, fontFaceName);
+          // if (msdfFont) await adjustFont(msdfFont);
 
           const mtsdfFont = await genFont(file, 'mtsdf', singleAtlas, fontFaceName);
           if (mtsdfFont) await adjustFont(mtsdfFont);
